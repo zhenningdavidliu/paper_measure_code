@@ -1,0 +1,6 @@
+{
+    "model": "simple_cnn",
+    "accuracy_function": "accuracy",
+    "model_path": "models/pretrained_mnist_model.pth",
+    "dataset": "mnist"
+}

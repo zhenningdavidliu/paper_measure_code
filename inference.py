@@ -9,6 +9,8 @@ from tqdm import tqdm
 from models.custom_models import SimpleCNN
 import json
 import eagerpy as ep
+from collections import defaultdict
+from constants import mean_l2_distances
 
 
 if __name__ == "__main__":
@@ -19,11 +21,13 @@ if __name__ == "__main__":
     
     model_name = config["model"]
     model_path = config["model_path"]
-
+    dataset_name = config["dataset"]
     # Step 1: Load MNIST dataset
     transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5,), (0.5,))])
     test_dataset = torchvision.datasets.MNIST(root='./data', train=False, transform=transform, download=True)
     test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=1, shuffle=False)
+
+    mean_l2_distance = mean_l2_distances[dataset_name]
 
     # Step 2: Load a pretrained model for MNIST (here using a simple CNN)
 
@@ -43,28 +47,42 @@ if __name__ == "__main__":
     adversarial_attacks = {
         "FGSM": attacks.FGSM(),
         "DeepFool": attacks.L2DeepFoolAttack(),
-        # "CarliniWagner": attacks.L2CarliniWagnerAttack(),
+        "PGD": attacks.PGD(),
+        "L2PGD": attacks.L2PGD(),
     }
 
-    l2_distances = {name: [] for name in adversarial_attacks.keys()}
+    # Make sure epsilons are smaller than mean L2 distance
     epsilons = [0.0, 0.001, 0.005, 0.01, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5]
+    epsilons = [epsilon for epsilon in epsilons if epsilon < mean_l2_distance]
 
     images, labels = ep.astensors(*samples(fmodel, dataset="mnist", batchsize=16))
     
-
+    l2_distances = {name: defaultdict(list) for name in adversarial_attacks.keys()}
+    min_l2_distances = {name: {batch_idx: mean_l2_distance for batch_idx in range(len(images))} for name in adversarial_attacks.keys()}
+    # print(images.shape, labels.shape)
     for name, attack in adversarial_attacks.items():
         min_distance = None 
         # try:
         raw_advs, clipped_advs, success = attack(fmodel, images, labels, epsilons=epsilons)
-        for original_image, adv_example in tqdm(zip(images, clipped_advs), desc=f"Adversarial attacks with {name}"):
-            if adv_example is not None:
+        # print(success)
+        # print(len(clipped_advs[0]), images.shape)
+        for jdx, adv_examples in enumerate(clipped_advs):
+            for idx, (img, adv_example) in enumerate(zip(images, adv_examples)):
                 # Compute L2 distance between original and adversarial example
-                distance = l2(original_image, adv_example)
-                l2_distances[name].append(distance)
+                if success[jdx][idx]:
+                    distance = l2(img, adv_example)
+                    if idx not in l2_distances[name]:
+                        l2_distances[name][idx] = []
+                        l2_distances[name][idx].append(distance.item())
+        
+        for idx in l2_distances[name]:
+            min_l2_distances[name][idx] = min(l2_distances[name][idx])
 
 
 
 
     # Step 4: Store results
+    print(min_l2_distances)
     np.save(f"results/l2_distances_{model_name}.npy", l2_distances)
-    print(f"Adversarial attacks complete. Results saved as 'l2_distances_{model_name}.npy'")
+    np.save(f"results/min_l2_distances_{model_name}.npy", min_l2_distances)
+    print(f"Adversarial attacks complete. Results saved as 'l2_distances_{model_name}.npy' and 'min_l2_distances_{model_name}.npy'")

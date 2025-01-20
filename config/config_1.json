@@ -1,0 +1,11 @@
+{
+    "model": "simple_cnn",
+    "epochs": 3,
+    "batch_size": 64,
+    "learning_rate": 0.001,
+    "optimizer": "adam",
+    "loss_function": "cross_entropy",
+    "accuracy_function": "accuracy",
+    "model_path": "models/pretrained_mnist_model.pth",
+    "dataset": "mnist"
+}
