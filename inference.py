@@ -11,7 +11,7 @@ import json
 import eagerpy as ep
 from collections import defaultdict
 from constants import mean_l2_distances
-
+import pandas as pd
 
 if __name__ == "__main__":
 
@@ -81,8 +81,9 @@ if __name__ == "__main__":
 
 
 
-    # Step 4: Store results
-    print(min_l2_distances)
-    np.save(f"results/l2_distances_{model_name}.npy", l2_distances)
-    np.save(f"results/min_l2_distances_{model_name}.npy", min_l2_distances)
+    # Step 4: Store results as csv
+    min_l2_distances_df = pd.DataFrame(min_l2_distances)
+    l2_distances_df = pd.DataFrame(l2_distances)
+    min_l2_distances_df.to_csv(f"results/min_l2_distances_{model_name}.csv")
+    l2_distances_df.to_csv(f"results/l2_distances_{model_name}.csv")
     print(f"Adversarial attacks complete. Results saved as 'l2_distances_{model_name}.npy' and 'min_l2_distances_{model_name}.npy'")

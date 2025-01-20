@@ -7,6 +7,7 @@ from tqdm import tqdm
 
 if __name__ == "__main__":
     dataset_name = "mnist"
+    constants_name = "mean_l2_distance"
 
     # Load whole MNIST dataset
     transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5,), (0.5,))])
@@ -20,16 +21,20 @@ if __name__ == "__main__":
 
     images = torch.cat((images_train, images_test), 0)
 
-    # Calculate mean L2 distance for whole dataset between closest images
-    min_l2_distances = 0
-    for i in tqdm(range(len(images)), desc="Calculating mean L2 distance"):
-        # Remove current image from the list
-        image = images[i]
-        temp_images = images.clone()
-        temp_images = torch.cat((temp_images[:i], temp_images[i+1:]), 0)
+    if constants_name == "mean_l2_distance":
 
-        min_dist = np.min(l2(image, temp_images).numpy())
-        min_l2_distances += min_dist
-    min_l2_distances /= len(images)
-    print(f"Mean L2 distance: {min_l2_distances}")
-    np.save(f"constants", min_l2_distances)
+        # Calculate mean L2 distance for whole dataset between closest images
+        min_l2_distances = 0
+        for i in tqdm(range(len(images)), desc="Calculating mean L2 distance"):
+            # Remove current image from the list
+            image = images[i]
+            temp_images = images.clone()
+            temp_images = torch.cat((temp_images[:i], temp_images[i+1:]), 0)
+
+            min_dist = np.min(l2(image, temp_images).numpy())
+            min_l2_distances += min_dist
+        min_l2_distances /= len(images)
+        print(f"Mean L2 distance: {min_l2_distances}")
+        np.save(f"constants", min_l2_distances)
+    else:
+        print("Invalid constant name")
