@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torchvision
+import torchvision.models as models
 import torchvision.transforms as transforms
 from foolbox import PyTorchModel, attacks, samples
 from foolbox.distances import l2
@@ -16,7 +17,7 @@ import pandas as pd
 if __name__ == "__main__":
 
     # Load config
-    with open("config/config_1.json", "r") as f:
+    with open("config/config_2.json", "r") as f:
         config = json.load(f)
     
     model_name = config["model"]
@@ -40,7 +41,7 @@ if __name__ == "__main__":
     elif model_name == "resnet18":
         model = torchvision.models.resnet18(pretrained=True)
         model.fc = nn.Linear(model.fc.in_features, 10)
-        model.load_state_dict(torch.load("models/pretrained_resnet18_model.pth"))
+        
         model.eval()  # Set model to evaluation mode
     else:
         raise ValueError(f"Model {model_name} not found")
@@ -61,6 +62,12 @@ if __name__ == "__main__":
     epsilons = [epsilon for epsilon in epsilons if epsilon < mean_l2_distance]
 
     images, labels = ep.astensors(*samples(fmodel, dataset="mnist", batchsize=16))
+
+    # If the model is colored, we need to repeat the images 3 times
+    if model_name == "resnet18":
+        images = images.raw.repeat(1, 3, 1, 1)
+        images = ep.astensor(images)
+
     # Only select correctly classified images
     _, predicted = torch.max(fmodel(images).raw.data, 1)
     correct_indices = (labels.raw == predicted).nonzero().flatten()
@@ -72,6 +79,7 @@ if __name__ == "__main__":
     # print(images.shape, labels.shape)
     for name, attack in adversarial_attacks.items():
         min_distance = None 
+        print(images.shape, labels.shape)
         # try:
         raw_advs, clipped_advs, success = attack(fmodel, images, labels, epsilons=epsilons)
         # print(success)
@@ -81,6 +89,8 @@ if __name__ == "__main__":
                 # Compute L2 distance between original and adversarial example
                 if success[jdx][idx]:
                     distance = l2(img, adv_example)
+                    if len(distance) > 1:
+                        distance = np.linalg.norm(distance.raw)
                     if idx not in l2_distances[name]:
                         l2_distances[name][idx] = []
                         l2_distances[name][idx].append(distance.item())

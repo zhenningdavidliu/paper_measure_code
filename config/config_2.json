@@ -1,6 +1,6 @@
 {
-    "model": "simple_cnn",
+    "model": "resnet18",
     "accuracy_function": "accuracy",
-    "model_path": "models/pretrained_mnist_model.pth",
+    "model_path": "models/resnet18_model.pth",
     "dataset": "mnist"
 }
