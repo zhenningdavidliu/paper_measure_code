@@ -62,7 +62,8 @@ if __name__ == "__main__":
 
     images, labels = ep.astensors(*samples(fmodel, dataset="mnist", batchsize=16))
     # Only select correctly classified images
-    correct_indices = (labels == fmodel(images)).nonzero().flatten()
+    _, predicted = torch.max(fmodel(images).raw.data, 1)
+    correct_indices = (labels.raw == predicted).nonzero().flatten()
     images = images[correct_indices]
     labels = labels[correct_indices]
     
