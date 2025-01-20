@@ -37,6 +37,11 @@ if __name__ == "__main__":
         model = SimpleCNN()
         model.load_state_dict(torch.load("models/pretrained_mnist_model.pth"))
         model.eval()  # Set model to evaluation mode
+    elif model_name == "resnet18":
+        model = torchvision.models.resnet18(pretrained=True)
+        model.fc = nn.Linear(model.fc.in_features, 10)
+        model.load_state_dict(torch.load("models/pretrained_resnet18_model.pth"))
+        model.eval()  # Set model to evaluation mode
     else:
         raise ValueError(f"Model {model_name} not found")
 
@@ -56,6 +61,10 @@ if __name__ == "__main__":
     epsilons = [epsilon for epsilon in epsilons if epsilon < mean_l2_distance]
 
     images, labels = ep.astensors(*samples(fmodel, dataset="mnist", batchsize=16))
+    # Only select correctly classified images
+    correct_indices = (labels == fmodel(images)).nonzero().flatten()
+    images = images[correct_indices]
+    labels = labels[correct_indices]
     
     l2_distances = {name: defaultdict(list) for name in adversarial_attacks.keys()}
     min_l2_distances = {name: {batch_idx: mean_l2_distance for batch_idx in range(len(images))} for name in adversarial_attacks.keys()}
