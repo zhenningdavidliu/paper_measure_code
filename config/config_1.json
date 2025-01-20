@@ -6,6 +6,6 @@
     "optimizer": "adam",
     "loss_function": "cross_entropy",
     "accuracy_function": "accuracy",
-    "model_path": "models/pretrained_mnist_model.pth",
+    "model_path": "models/simple_cnn_model.pth",
     "dataset": "mnist"
 }

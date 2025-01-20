@@ -1,0 +1,6 @@
+{
+    "model": "vgg16",
+    "accuracy_function": "accuracy",
+    "model_path": "models/vgg16_model.pth",
+    "dataset": "mnist"
+}

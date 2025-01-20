@@ -13,17 +13,25 @@ if __name__ == "__main__":
     device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
     print(f"Using device: {device}")
 
-    model_name = "resnet18"
+    model_name = "vgg16"
     if model_name == "simple_cnn":
         greyscale = True
-    elif model_name == "resnet18":
+    elif model_name in ["resnet18", "vgg16"]:
         greyscale = False
     else:
         raise ValueError(f"Model name {model_name} not recognized")
 
     # Load MNIST dataset
     print("Loading data...")
-    transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5,), (0.5,))])
+    if model_name == "vgg16":
+        # Define the transformation
+        transform = transforms.Compose([
+            transforms.Resize((224, 224)),  # Resize to 224x224
+            transforms.ToTensor(),
+            transforms.Normalize((0.5,), (0.5,))
+        ])
+    else:
+        transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5,), (0.5,))])
     train_dataset = torchvision.datasets.MNIST(root='./data', train=True, transform=transform, download=True)
     train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=64, shuffle=True)
     print("Data loaded.")
@@ -35,6 +43,9 @@ if __name__ == "__main__":
     elif model_name == "resnet18":
         model = torchvision.models.resnet18(pretrained=True)
         model.fc = nn.Linear(model.fc.in_features, 10)
+    elif model_name == "vgg16":
+        model = torchvision.models.vgg16(pretrained=True)
+        model.classifier[6] = nn.Linear(model.classifier[6].in_features, 10)
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=0.001)
     model.to(device)
@@ -96,10 +107,7 @@ if __name__ == "__main__":
     print(f"Average loss: {sum(losses) / len(losses):.4f}, Accuracy: {100 * correct / total:.2f}%")
 
     # Save the model
-    if model_name == "simple_cnn":
-        torch.save(model.state_dict(), "models/pretrained_mnist_model.pth")
-    elif model_name == "resnet18":
-        torch.save(model.state_dict(), "models/resnet18_model.pth")
+    torch.save(model.state_dict(), f"models/{model_name}_model.pth")
     print("Model trained and saved.")
 
 

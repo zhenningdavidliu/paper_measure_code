@@ -17,7 +17,7 @@ import pandas as pd
 if __name__ == "__main__":
 
     # Load config
-    with open("config/config_2.json", "r") as f:
+    with open("config/config_3.json", "r") as f:
         config = json.load(f)
     
     model_name = config["model"]
@@ -41,7 +41,12 @@ if __name__ == "__main__":
     elif model_name == "resnet18":
         model = torchvision.models.resnet18(pretrained=True)
         model.fc = nn.Linear(model.fc.in_features, 10)
-        
+        model.load_state_dict(torch.load(model_path))
+        model.eval()  # Set model to evaluation mode
+    elif model_name == "vgg16":
+        model = torchvision.models.vgg16(pretrained=True)
+        model.classifier[6] = nn.Linear(model.classifier[6].in_features, 10)
+        model.load_state_dict(torch.load(model_path))
         model.eval()  # Set model to evaluation mode
     else:
         raise ValueError(f"Model {model_name} not found")
@@ -64,7 +69,7 @@ if __name__ == "__main__":
     images, labels = ep.astensors(*samples(fmodel, dataset="mnist", batchsize=16))
 
     # If the model is colored, we need to repeat the images 3 times
-    if model_name == "resnet18":
+    if model_name in ["resnet18", "vgg16"]:
         images = images.raw.repeat(1, 3, 1, 1)
         images = ep.astensor(images)
 
@@ -78,6 +83,7 @@ if __name__ == "__main__":
     min_l2_distances = {name: {batch_idx: mean_l2_distance for batch_idx in range(len(images))} for name in adversarial_attacks.keys()}
     # print(images.shape, labels.shape)
     for name, attack in adversarial_attacks.items():
+        print(f"Running {name} attack")
         min_distance = None 
         print(images.shape, labels.shape)
         # try:
