@@ -24,7 +24,10 @@ if __name__ == "__main__":
     model_path = config["model_path"]
     dataset_name = config["dataset"]
     # Step 1: Load MNIST dataset
-    transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5,), (0.5,))])
+    if model_name == "vgg16":
+        transform = transforms.Compose([transforms.Resize((224, 224)), transforms.ToTensor(), transforms.Normalize((0.5,), (0.5,))])
+    else:
+        transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5,), (0.5,))])
     test_dataset = torchvision.datasets.MNIST(root='./data', train=False, transform=transform, download=True)
     test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=1, shuffle=False)
 
@@ -71,6 +74,8 @@ if __name__ == "__main__":
     # If the model is colored, we need to repeat the images 3 times
     if model_name in ["resnet18", "vgg16"]:
         images = images.raw.repeat(1, 3, 1, 1)
+        if model_name == "vgg16":
+            images = transforms.Resize((224, 224))(images)
         images = ep.astensor(images)
 
     # Only select correctly classified images
